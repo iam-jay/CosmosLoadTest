@@ -49,9 +49,9 @@
             "type": "SecureString",
             "metadata": { "description": "Cosmos DB primary key." }
         },
-        "databaseName": { "defaultValue": "loadtest", "type": "String" },
-        "containerName": { "defaultValue": "col", "type": "String" },
-        "throughputRu": { "defaultValue": 10000, "type": "Int" },
+        "databaseName": { "defaultValue": "loadtest", "type": "String", "metadata": { "description": "Cosmos database id (created if missing)." } },
+        "containerName": { "defaultValue": "col", "type": "String", "metadata": { "description": "Cosmos container id (created if missing, partition key /pk)." } },
+        "throughputRu": { "defaultValue": 10000, "type": "Int", "metadata": { "description": "RU/s used only if the container has to be created." } },
 
         "requestsPerSec": {
             "defaultValue": 100,
@@ -63,28 +63,28 @@
             "type": "Int",
             "metadata": { "description": "Total operation count across all operations." }
         },
-        "documentSizeBytes": { "defaultValue": 1024, "type": "Int" },
-        "partitionKeyCount": { "defaultValue": 100, "type": "Int" },
-        "maxConcurrency": { "defaultValue": 256, "type": "Int" },
+        "documentSizeBytes": { "defaultValue": 1024, "type": "Int", "metadata": { "description": "Approx. serialized document size in bytes." } },
+        "partitionKeyCount": { "defaultValue": 100, "type": "Int", "metadata": { "description": "Number of distinct partition-key values to spread load across." } },
+        "maxConcurrency": { "defaultValue": 256, "type": "Int", "metadata": { "description": "Maximum concurrent in-flight operations." } },
         "preSeedCount": {
             "defaultValue": 10000,
             "type": "Int",
             "metadata": { "description": "Docs pre-seeded ONLY when createPct is 0." }
         },
 
-        "readPct": { "defaultValue": "0", "type": "String" },
-        "queryPct": { "defaultValue": "0", "type": "String" },
-        "createPct": { "defaultValue": "0", "type": "String" },
-        "readFeedPct": { "defaultValue": "0", "type": "String" },
-        "upsertPct": { "defaultValue": "0", "type": "String" },
-        "patchPct": { "defaultValue": "0", "type": "String" },
-        "replacePct": { "defaultValue": "0", "type": "String" },
-        "deletePct": { "defaultValue": "0", "type": "String" },
-        "batchPct": { "defaultValue": "0", "type": "String" },
+        "readPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Read percentage/weight (0 disables)." } },
+        "queryPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Query percentage/weight (0 disables)." } },
+        "createPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Create percentage/weight (0 disables; if 0, pre-seeding runs)." } },
+        "readFeedPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "ReadFeed/change-feed percentage/weight (0 disables)." } },
+        "upsertPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Upsert percentage/weight (0 disables)." } },
+        "patchPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Patch percentage/weight (0 disables)." } },
+        "replacePct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Replace percentage/weight (0 disables)." } },
+        "deletePct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Delete percentage/weight (0 disables)." } },
+        "batchPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Batch percentage/weight (0 disables)." } },
 
-        "repoOwner": { "defaultValue": "iam-jay", "type": "String" },
-        "repoName": { "defaultValue": "CosmosLoadTest", "type": "String" },
-        "repoBranch": { "defaultValue": "main", "type": "String" }
+        "repoOwner": { "defaultValue": "iam-jay", "type": "String", "metadata": { "description": "GitHub owner hosting the CosmosLoadTest code." } },
+        "repoName": { "defaultValue": "CosmosLoadTest", "type": "String", "metadata": { "description": "GitHub repository name." } },
+        "repoBranch": { "defaultValue": "main", "type": "String", "metadata": { "description": "GitHub branch to build." } }
     },
     "variables": {
         "vmName": "[concat(parameters('projectName'), '-vm')]",

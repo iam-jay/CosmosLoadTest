@@ -3,6 +3,14 @@
 A .NET 8 console tool that drives a configurable Azure Cosmos DB (NoSQL) workload
 across all 9 document operations and produces an HTML report.
 
+## Deploy on an Azure Windows VM (one click)
+
+Fill the workload details in the Azure Portal — no file editing needed:
+
+[![Deploy To Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fiam-jay%2FCosmosLoadTest%2Fmain%2Fdeploy%2Ftemplate.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fiam-jay%2FCosmosLoadTest%2Fmain%2Fdeploy%2FcreateUiDefinition.json)
+
+See [`deploy/README.md`](deploy/README.md) for details (and a basic-form button).
+
 ## Operations supported
 Read, Query, Create, ReadFeed (change feed), Upsert, Patch, Replace, Delete, Batch
 (transactional batch). Any operation set to `0%` is skipped.

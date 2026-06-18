@@ -1,0 +1,240 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+    "handler": "Microsoft.Azure.CreateUIDef",
+    "version": "0.1.2-preview",
+    "parameters": {
+        "basics": [
+            {
+                "name": "projectName",
+                "type": "Microsoft.Common.TextBox",
+                "label": "Project name (resource prefix)",
+                "defaultValue": "cosmosload1",
+                "toolTip": "Lowercase letters and numbers, one word. Used to name VM/network resources.",
+                "constraints": {
+                    "required": true,
+                    "regex": "^[a-z0-9]{3,15}$",
+                    "validationMessage": "3-15 lowercase letters or numbers."
+                }
+            },
+            {
+                "name": "cosmosSection",
+                "type": "Microsoft.Common.Section",
+                "label": "Cosmos DB target",
+                "elements": [
+                    {
+                        "name": "cosmosURI",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Cosmos account endpoint URI",
+                        "toolTip": "e.g. https://myacct.documents.azure.com:443/",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^https://.+",
+                            "validationMessage": "Must be an https:// endpoint URI."
+                        }
+                    },
+                    {
+                        "name": "cosmosKey",
+                        "type": "Microsoft.Common.PasswordBox",
+                        "label": { "password": "Cosmos primary key", "confirmPassword": "Confirm key" },
+                        "toolTip": "Primary (master) key. Needs create permission for db/container.",
+                        "options": { "hideConfirmation": true },
+                        "constraints": { "required": true }
+                    },
+                    {
+                        "name": "databaseName",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Database id",
+                        "defaultValue": "loadtest",
+                        "constraints": { "required": true }
+                    },
+                    {
+                        "name": "containerName",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Container id",
+                        "defaultValue": "col",
+                        "constraints": { "required": true }
+                    },
+                    {
+                        "name": "throughputRu",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Throughput RU/s (if container created)",
+                        "defaultValue": "10000",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    }
+                ]
+            }
+        ],
+        "steps": [
+            {
+                "name": "vm",
+                "label": "Virtual Machine",
+                "elements": [
+                    {
+                        "name": "adminUsername",
+                        "type": "Microsoft.Compute.UserNameTextBox",
+                        "label": "Admin username",
+                        "defaultValue": "cosmosload",
+                        "osPlatform": "Windows",
+                        "constraints": { "required": true }
+                    },
+                    {
+                        "name": "adminPassword",
+                        "type": "Microsoft.Compute.CredentialsCombo",
+                        "label": { "password": "Admin password", "confirmPassword": "Confirm password" },
+                        "osPlatform": "Windows",
+                        "constraints": { "required": true }
+                    },
+                    {
+                        "name": "vmSize",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "VM size",
+                        "defaultValue": "Standard_D8s_v5",
+                        "toolTip": "Larger sizes drive more load.",
+                        "constraints": {
+                            "allowedValues": [
+                                { "label": "Standard_D4s_v5 (4 vCPU)", "value": "Standard_D4s_v5" },
+                                { "label": "Standard_D8s_v5 (8 vCPU)", "value": "Standard_D8s_v5" },
+                                { "label": "Standard_D16s_v5 (16 vCPU)", "value": "Standard_D16s_v5" },
+                                { "label": "Standard_D32s_v5 (32 vCPU)", "value": "Standard_D32s_v5" }
+                            ],
+                            "required": true
+                        }
+                    },
+                    {
+                        "name": "allowRdpFromIp",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Allow RDP from IP/CIDR",
+                        "defaultValue": "*",
+                        "toolTip": "Source allowed to RDP (3389). Use * for any, or your IP for safety.",
+                        "constraints": { "required": true }
+                    }
+                ]
+            },
+            {
+                "name": "workload",
+                "label": "Workload",
+                "elements": [
+                    {
+                        "name": "requestsPerSec",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Requests per second (global)",
+                        "defaultValue": "100",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    },
+                    {
+                        "name": "totalRequests",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Total operations",
+                        "defaultValue": "5000",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    },
+                    {
+                        "name": "documentSizeBytes",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Document size (bytes)",
+                        "defaultValue": "1024",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    },
+                    {
+                        "name": "partitionKeyCount",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Distinct partition keys",
+                        "defaultValue": "100",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    },
+                    {
+                        "name": "maxConcurrency",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Max concurrency",
+                        "defaultValue": "256",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    },
+                    {
+                        "name": "preSeedCount",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Pre-seed docs (only if Create % = 0)",
+                        "defaultValue": "10000",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    }
+                ]
+            },
+            {
+                "name": "mix",
+                "label": "Operation mix",
+                "elements": [
+                    {
+                        "name": "mixInfo",
+                        "type": "Microsoft.Common.InfoBox",
+                        "visible": true,
+                        "options": {
+                            "icon": "Info",
+                            "text": "Enter relative weights/percentages per operation. A value of 0 disables that operation. They are normalized so target counts sum to Total operations."
+                        }
+                    },
+                    { "name": "readPct", "type": "Microsoft.Common.TextBox", "label": "Read %", "defaultValue": "20", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "queryPct", "type": "Microsoft.Common.TextBox", "label": "Query %", "defaultValue": "10", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "createPct", "type": "Microsoft.Common.TextBox", "label": "Create %", "defaultValue": "25", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "readFeedPct", "type": "Microsoft.Common.TextBox", "label": "ReadFeed %", "defaultValue": "5", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "upsertPct", "type": "Microsoft.Common.TextBox", "label": "Upsert %", "defaultValue": "10", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "patchPct", "type": "Microsoft.Common.TextBox", "label": "Patch %", "defaultValue": "10", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "replacePct", "type": "Microsoft.Common.TextBox", "label": "Replace %", "defaultValue": "10", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "deletePct", "type": "Microsoft.Common.TextBox", "label": "Delete %", "defaultValue": "5", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } },
+                    { "name": "batchPct", "type": "Microsoft.Common.TextBox", "label": "Batch %", "defaultValue": "5", "constraints": { "required": true, "regex": "^[0-9.]+$", "validationMessage": "Numbers only." } }
+                ]
+            },
+            {
+                "name": "source",
+                "label": "Source code",
+                "elements": [
+                    {
+                        "name": "sourceInfo",
+                        "type": "Microsoft.Common.InfoBox",
+                        "visible": true,
+                        "options": {
+                            "icon": "Info",
+                            "text": "The VM downloads and builds the tool from this public GitHub repo/branch."
+                        }
+                    },
+                    { "name": "repoOwner", "type": "Microsoft.Common.TextBox", "label": "GitHub owner", "defaultValue": "iam-jay", "constraints": { "required": true } },
+                    { "name": "repoName", "type": "Microsoft.Common.TextBox", "label": "GitHub repo", "defaultValue": "CosmosLoadTest", "constraints": { "required": true } },
+                    { "name": "repoBranch", "type": "Microsoft.Common.TextBox", "label": "Branch", "defaultValue": "main", "constraints": { "required": true } }
+                ]
+            }
+        ],
+        "outputs": {
+            "projectName": "[basics('projectName')]",
+            "location": "[location()]",
+            "cosmosURI": "[basics('cosmosSection').cosmosURI]",
+            "cosmosKey": "[basics('cosmosSection').cosmosKey]",
+            "databaseName": "[basics('cosmosSection').databaseName]",
+            "containerName": "[basics('cosmosSection').containerName]",
+            "throughputRu": "[int(basics('cosmosSection').throughputRu)]",
+
+            "adminUsername": "[steps('vm').adminUsername]",
+            "adminPassword": "[steps('vm').adminPassword.password]",
+            "vmSize": "[steps('vm').vmSize]",
+            "allowRdpFromIp": "[steps('vm').allowRdpFromIp]",
+
+            "requestsPerSec": "[int(steps('workload').requestsPerSec)]",
+            "totalRequests": "[int(steps('workload').totalRequests)]",
+            "documentSizeBytes": "[int(steps('workload').documentSizeBytes)]",
+            "partitionKeyCount": "[int(steps('workload').partitionKeyCount)]",
+            "maxConcurrency": "[int(steps('workload').maxConcurrency)]",
+            "preSeedCount": "[int(steps('workload').preSeedCount)]",
+
+            "readPct": "[steps('mix').readPct]",
+            "queryPct": "[steps('mix').queryPct]",
+            "createPct": "[steps('mix').createPct]",
+            "readFeedPct": "[steps('mix').readFeedPct]",
+            "upsertPct": "[steps('mix').upsertPct]",
+            "patchPct": "[steps('mix').patchPct]",
+            "replacePct": "[steps('mix').replacePct]",
+            "deletePct": "[steps('mix').deletePct]",
+            "batchPct": "[steps('mix').batchPct]",
+
+            "repoOwner": "[steps('source').repoOwner]",
+            "repoName": "[steps('source').repoName]",
+            "repoBranch": "[steps('source').repoBranch]"
+        }
+    }
+}

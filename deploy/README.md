@@ -4,6 +4,22 @@ This ARM template spins up a **Windows VM** that automatically downloads, builds
 and runs the CosmosLoadTest workload via a CustomScript extension. The HTML report
 is left on the VM (RDP in to view it).
 
+## One-click deploy (fill the form in the portal — no file editing)
+
+**Custom wizard (grouped form, recommended):**
+
+[![Deploy To Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fiam-jay%2FCosmosLoadTest%2Fmain%2Fdeploy%2Ftemplate.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fiam-jay%2FCosmosLoadTest%2Fmain%2Fdeploy%2FcreateUiDefinition.json)
+
+**Basic auto-generated form:**
+
+[![Deploy To Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fiam-jay%2FCosmosLoadTest%2Fmain%2Fdeploy%2Ftemplate.json)
+
+Click a button, sign in, fill in the Cosmos endpoint/key, VM password, and the
+workload mix, then **Review + create**. No need to edit `parameters.json`.
+
+> The buttons require the template/createUiDefinition to be on the default branch
+> of the public repo. After pushing changes, the links pick them up automatically.
+
 ## What it creates
 - NSG (RDP 3389 inbound — restrict with `allowRdpFromIp`)
 - Public IP, VNet, Subnet, NIC
