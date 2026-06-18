@@ -1,0 +1,265 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": {
+            "defaultValue": "cosmosload",
+            "type": "String",
+            "metadata": {
+                "description": "Name prefix for generated resources. Lowercase letters and numbers, one word."
+            }
+        },
+        "location": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "String",
+            "metadata": { "description": "Location for all resources." }
+        },
+        "adminUsername": {
+            "defaultValue": "cosmosload",
+            "type": "String",
+            "metadata": { "description": "Admin username for the Windows VM." }
+        },
+        "adminPassword": {
+            "type": "SecureString",
+            "metadata": { "description": "Admin password for the Windows VM." }
+        },
+        "vmSize": {
+            "defaultValue": "Standard_D8s_v5",
+            "type": "String",
+            "metadata": { "description": "Virtual Machine size." }
+        },
+        "allowRdpFromIp": {
+            "defaultValue": "*",
+            "type": "String",
+            "metadata": { "description": "Source IP/CIDR allowed to RDP (3389). Use * for any, or your IP for safety." }
+        },
+        "vNetName": {
+            "defaultValue": "[concat(parameters('projectName'), '-vnet')]",
+            "type": "String"
+        },
+        "vNetAddressPrefixes": { "defaultValue": "10.3.0.0/16", "type": "String" },
+        "vNetSubnetName": { "defaultValue": "default", "type": "String" },
+        "vNetSubnetAddressPrefix": { "defaultValue": "10.3.0.0/24", "type": "String" },
+
+        "cosmosURI": {
+            "type": "String",
+            "metadata": { "description": "Cosmos DB account endpoint URI." }
+        },
+        "cosmosKey": {
+            "type": "SecureString",
+            "metadata": { "description": "Cosmos DB primary key." }
+        },
+        "databaseName": { "defaultValue": "loadtest", "type": "String" },
+        "containerName": { "defaultValue": "col", "type": "String" },
+        "throughputRu": { "defaultValue": 10000, "type": "Int" },
+
+        "requestsPerSec": {
+            "defaultValue": 100,
+            "type": "Int",
+            "metadata": { "description": "Global target requests per second across all operations." }
+        },
+        "totalRequests": {
+            "defaultValue": 5000,
+            "type": "Int",
+            "metadata": { "description": "Total operation count across all operations." }
+        },
+        "documentSizeBytes": { "defaultValue": 1024, "type": "Int" },
+        "partitionKeyCount": { "defaultValue": 100, "type": "Int" },
+        "maxConcurrency": { "defaultValue": 256, "type": "Int" },
+        "preSeedCount": {
+            "defaultValue": 10000,
+            "type": "Int",
+            "metadata": { "description": "Docs pre-seeded ONLY when createPct is 0." }
+        },
+
+        "readPct": { "defaultValue": "0", "type": "String" },
+        "queryPct": { "defaultValue": "0", "type": "String" },
+        "createPct": { "defaultValue": "0", "type": "String" },
+        "readFeedPct": { "defaultValue": "0", "type": "String" },
+        "upsertPct": { "defaultValue": "0", "type": "String" },
+        "patchPct": { "defaultValue": "0", "type": "String" },
+        "replacePct": { "defaultValue": "0", "type": "String" },
+        "deletePct": { "defaultValue": "0", "type": "String" },
+        "batchPct": { "defaultValue": "0", "type": "String" },
+
+        "repoOwner": { "defaultValue": "iam-jay", "type": "String" },
+        "repoName": { "defaultValue": "CosmosLoadTest", "type": "String" },
+        "repoBranch": { "defaultValue": "main", "type": "String" }
+    },
+    "variables": {
+        "vmName": "[concat(parameters('projectName'), '-vm')]",
+        "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
+        "networkInterfaceName": "[concat(parameters('projectName'), '-nic')]",
+        "networkSecurityGroupName": "[concat(parameters('projectName'), '-nsg')]",
+        "scriptName": "run-loadtest.ps1",
+        "scriptUrl": "[concat('https://raw.githubusercontent.com/', parameters('repoOwner'), '/', parameters('repoName'), '/', parameters('repoBranch'), '/scripts/run-loadtest.ps1')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-11-01",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowRDP",
+                        "properties": {
+                            "priority": 1000,
+                            "protocol": "Tcp",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourceAddressPrefix": "[parameters('allowRdpFromIp')]",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "3389"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[parameters('location')]",
+            "sku": { "name": "Basic", "tier": "Regional" },
+            "properties": {
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('vNetName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": { "addressPrefixes": [ "[parameters('vNetAddressPrefixes')]" ] },
+                "subnets": [
+                    {
+                        "name": "[parameters('vNetSubnetName')]",
+                        "properties": { "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]" }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('vNetName'), '/', parameters('vNetSubnetName'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+            ],
+            "properties": {
+                "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-11-01",
+            "name": "[variables('networkInterfaceName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-11-01",
+            "name": "[variables('vmName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": { "vmSize": "[parameters('vmSize')]" },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2022-datacenter-azure-edition",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "[concat(variables('vmName'),'_OsDisk')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": { "storageAccountType": "Premium_LRS" },
+                        "deleteOption": "Delete",
+                        "diskSizeGB": 127
+                    }
+                },
+                "osProfile": {
+                    "computerName": "[variables('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": true,
+                        "provisionVMAgent": true
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]",
+                            "properties": { "deleteOption": "Delete" }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": { "bootDiagnostics": { "enabled": true } }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2021-11-01",
+            "name": "[concat(variables('vmName'), '/RunLoadTest')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.10",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [ "[variables('scriptUrl')]" ]
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -NoProfile -File ', variables('scriptName'), ' -Endpoint ''', parameters('cosmosURI'), ''' -Key ''', parameters('cosmosKey'), ''' -Database ''', parameters('databaseName'), ''' -Container ''', parameters('containerName'), ''' -Throughput ', parameters('throughputRu'), ' -Rps ', parameters('requestsPerSec'), ' -Total ', parameters('totalRequests'), ' -DocSize ', parameters('documentSizeBytes'), ' -PkCount ', parameters('partitionKeyCount'), ' -Concurrency ', parameters('maxConcurrency'), ' -PreSeed ', parameters('preSeedCount'), ' -Read ', parameters('readPct'), ' -Query ', parameters('queryPct'), ' -Create ', parameters('createPct'), ' -ReadFeed ', parameters('readFeedPct'), ' -Upsert ', parameters('upsertPct'), ' -Patch ', parameters('patchPct'), ' -Replace ', parameters('replacePct'), ' -Delete ', parameters('deletePct'), ' -Batch ', parameters('batchPct'), ' -RepoOwner ', parameters('repoOwner'), ' -RepoName ', parameters('repoName'), ' -Branch ', parameters('repoBranch'))]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "result": {
+            "type": "String",
+            "value": "[concat('VM ', variables('vmName'), ' deployed. The workload is running via the CustomScript extension. RDP into the VM and open C:\\CosmosLoadTest\\report.html (logs: C:\\CosmosLoadTest\\run.log).')]"
+        },
+        "vmName": { "type": "String", "value": "[variables('vmName')]" }
+    }
+}

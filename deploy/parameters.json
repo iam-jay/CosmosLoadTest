@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": { "value": "cosmosload1" },
+        "location": { "value": "eastus" },
+        "adminUsername": { "value": "cosmosload" },
+        "adminPassword": { "value": null },
+        "vmSize": { "value": "Standard_D8s_v5" },
+        "allowRdpFromIp": { "value": "*" },
+
+        "cosmosURI": { "value": "https://<your-account>.documents.azure.com:443/" },
+        "cosmosKey": { "value": null },
+        "databaseName": { "value": "loadtest" },
+        "containerName": { "value": "col" },
+        "throughputRu": { "value": 10000 },
+
+        "requestsPerSec": { "value": 100 },
+        "totalRequests": { "value": 5000 },
+        "documentSizeBytes": { "value": 1024 },
+        "partitionKeyCount": { "value": 100 },
+        "maxConcurrency": { "value": 256 },
+        "preSeedCount": { "value": 10000 },
+
+        "readPct": { "value": "20" },
+        "queryPct": { "value": "10" },
+        "createPct": { "value": "25" },
+        "readFeedPct": { "value": "5" },
+        "upsertPct": { "value": "10" },
+        "patchPct": { "value": "10" },
+        "replacePct": { "value": "10" },
+        "deletePct": { "value": "5" },
+        "batchPct": { "value": "5" },
+
+        "repoOwner": { "value": "iam-jay" },
+        "repoName": { "value": "CosmosLoadTest" },
+        "repoBranch": { "value": "main" }
+    }
+}
