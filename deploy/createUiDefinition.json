@@ -86,19 +86,29 @@
                     },
                     {
                         "name": "vmSize",
-                        "type": "Microsoft.Common.DropDown",
+                        "type": "Microsoft.Compute.SizeSelector",
                         "label": "VM size",
-                        "defaultValue": "Standard_D8s_v5",
-                        "toolTip": "Larger sizes drive more load.",
+                        "toolTip": "Pick any size available in the selected region. Larger sizes drive more load.",
+                        "recommendedSizes": [
+                            "Standard_D8s_v5",
+                            "Standard_D16s_v5",
+                            "Standard_D32s_v5"
+                        ],
                         "constraints": {
-                            "allowedValues": [
-                                { "label": "Standard_D4s_v5 (4 vCPU)", "value": "Standard_D4s_v5" },
-                                { "label": "Standard_D8s_v5 (8 vCPU)", "value": "Standard_D8s_v5" },
-                                { "label": "Standard_D16s_v5 (16 vCPU)", "value": "Standard_D16s_v5" },
-                                { "label": "Standard_D32s_v5 (32 vCPU)", "value": "Standard_D32s_v5" }
-                            ],
-                            "required": true
-                        }
+                            "allowedSizes": [],
+                            "excludedSizes": []
+                        },
+                        "options": {
+                            "hideDiskTypeFilter": false
+                        },
+                        "osPlatform": "Windows",
+                        "imageReference": {
+                            "publisher": "MicrosoftWindowsServer",
+                            "offer": "WindowsServer",
+                            "sku": "2022-datacenter-azure-edition"
+                        },
+                        "count": 1,
+                        "visible": true
                     },
                     {
                         "name": "allowRdpFromIp",
