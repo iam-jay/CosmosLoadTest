@@ -56,6 +56,14 @@ try {
     Log "=== CosmosLoadTest VM bootstrap starting ==="
     Log "Repo: $RepoOwner/$RepoName@$Branch  DB: $Database/$Container"
 
+    # 0. Pre-flight: refuse to run with an all-zero operation mix (would otherwise
+    #    fail deep in the tool). Surfaces a clear message in the extension status.
+    $pctSum = $Read + $Query + $Create + $ReadFeed + $Upsert + $Patch + $Replace + $Delete + $Batch
+    if ($pctSum -le 0) {
+        throw "All operation percentages are 0. Set at least one of -Read/-Query/-Create/-ReadFeed/-Upsert/-Patch/-Replace/-Delete/-Batch > 0."
+    }
+    Log "Operation mix sum = $pctSum (Read=$Read Query=$Query Create=$Create ReadFeed=$ReadFeed Upsert=$Upsert Patch=$Patch Replace=$Replace Delete=$Delete Batch=$Batch)"
+
     # 1. Install .NET 8 SDK (official dotnet-install script).
     Log "Installing .NET 8 SDK..."
     $dotnetDir = "C:\dotnet"
@@ -113,11 +121,18 @@ try {
         Copy-Item $reportPath (Join-Path $root "report.html") -Force
         Log "Report available at: $reportPath  (and $root\report.html)"
     }
-    Log "=== Workload finished (exit $exit) ==="
-    exit $exit
+    if ($exit -ne 0) {
+        Log "WORKLOAD FAILED (exit $exit). See $root\workload.log for the error."
+        throw "Workload exited with code $exit. Check C:\CosmosLoadTest\workload.log."
+    }
+    Log "=== Workload finished successfully (exit $exit) ==="
+    exit 0
 }
 catch {
-    Log "ERROR: $($_.Exception.Message)"
+    Log "BOOTSTRAP ERROR: $($_.Exception.Message)"
     Log $_.ScriptStackTrace
+    # Non-zero exit makes the CustomScript extension report Failed and shows this
+    # message in the VM instance view / deployment status.
+    Write-Error $_.Exception.Message
     exit 1
 }

@@ -72,14 +72,14 @@
             "metadata": { "description": "Docs pre-seeded ONLY when createPct is 0." }
         },
 
-        "readPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Read percentage/weight (0 disables)." } },
-        "queryPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Query percentage/weight (0 disables)." } },
-        "createPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Create percentage/weight (0 disables; if 0, pre-seeding runs)." } },
+        "readPct": { "defaultValue": "30", "type": "String", "metadata": { "description": "Read percentage/weight (0 disables)." } },
+        "queryPct": { "defaultValue": "10", "type": "String", "metadata": { "description": "Query percentage/weight (0 disables)." } },
+        "createPct": { "defaultValue": "40", "type": "String", "metadata": { "description": "Create percentage/weight (0 disables; if 0, pre-seeding runs)." } },
         "readFeedPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "ReadFeed/change-feed percentage/weight (0 disables)." } },
         "upsertPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Upsert percentage/weight (0 disables)." } },
         "patchPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Patch percentage/weight (0 disables)." } },
-        "replacePct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Replace percentage/weight (0 disables)." } },
-        "deletePct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Delete percentage/weight (0 disables)." } },
+        "replacePct": { "defaultValue": "15", "type": "String", "metadata": { "description": "Replace percentage/weight (0 disables)." } },
+        "deletePct": { "defaultValue": "5", "type": "String", "metadata": { "description": "Delete percentage/weight (0 disables)." } },
         "batchPct": { "defaultValue": "0", "type": "String", "metadata": { "description": "Batch percentage/weight (0 disables)." } },
 
         "repoOwner": { "defaultValue": "iam-jay", "type": "String", "metadata": { "description": "GitHub owner hosting the CosmosLoadTest code." } },
@@ -123,11 +123,14 @@
             "apiVersion": "2020-11-01",
             "name": "[variables('publicIPAddressName')]",
             "location": "[parameters('location')]",
-            "sku": { "name": "Basic", "tier": "Regional" },
+            "sku": { "name": "Standard", "tier": "Regional" },
             "properties": {
                 "publicIPAddressVersion": "IPv4",
-                "publicIPAllocationMethod": "Dynamic",
-                "idleTimeoutInMinutes": 4
+                "publicIPAllocationMethod": "Static",
+                "idleTimeoutInMinutes": 4,
+                "dnsSettings": {
+                    "domainNameLabel": "[toLower(concat(parameters('projectName'), uniqueString(resourceGroup().id)))]"
+                }
             }
         },
         {
@@ -135,29 +138,22 @@
             "apiVersion": "2020-11-01",
             "name": "[parameters('vNetName')]",
             "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+            ],
             "properties": {
                 "addressSpace": { "addressPrefixes": [ "[parameters('vNetAddressPrefixes')]" ] },
                 "subnets": [
                     {
                         "name": "[parameters('vNetSubnetName')]",
-                        "properties": { "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]" }
+                        "properties": {
+                            "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                            }
+                        }
                     }
                 ]
-            }
-        },
-        {
-            "type": "Microsoft.Network/virtualNetworks/subnets",
-            "apiVersion": "2020-11-01",
-            "name": "[concat(parameters('vNetName'), '/', parameters('vNetSubnetName'))]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
-            ],
-            "properties": {
-                "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
-                "networkSecurityGroup": {
-                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
-                }
             }
         },
         {
@@ -167,7 +163,7 @@
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName'))]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -258,8 +254,16 @@
     "outputs": {
         "result": {
             "type": "String",
-            "value": "[concat('VM ', variables('vmName'), ' deployed. The workload is running via the CustomScript extension. RDP into the VM and open C:\\CosmosLoadTest\\report.html (logs: C:\\CosmosLoadTest\\run.log).')]"
+            "value": "[concat('VM ', variables('vmName'), ' deployed. The workload runs via the CustomScript extension. RDP to the FQDN below and open C:\\CosmosLoadTest\\report.html (logs: C:\\CosmosLoadTest\\run.log).')]"
         },
-        "vmName": { "type": "String", "value": "[variables('vmName')]" }
+        "vmName": { "type": "String", "value": "[variables('vmName')]" },
+        "vmFqdn": {
+            "type": "String",
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))).dnsSettings.fqdn]"
+        },
+        "rdpHint": {
+            "type": "String",
+            "value": "[concat('To read logs without RDP: az vm run-command invoke -g <RG> -n ', variables('vmName'), ' --command-id RunPowerShellScript --scripts \"Get-Content C:\\CosmosLoadTest\\run.log -Tail 80\"')]"
+        }
     }
 }
