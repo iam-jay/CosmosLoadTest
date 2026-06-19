@@ -36,6 +36,11 @@ if (dryRun)
     Console.WriteLine($"[dry-run] Create in workload: {createIn} -> " +
         (createIn ? "documents produced during run (no pre-seed)."
                   : (AnyNeedsTarget(targets) ? $"pre-seed {cfg.PreSeedCount:N0} docs." : "no pre-seed needed.")));
+
+    // Write a preview report (zero actuals) so the layout/columns can be inspected.
+    var preview = new Metrics { StartUtc = DateTime.UtcNow, EndUtc = DateTime.UtcNow };
+    HtmlReport.Write(cfg.ReportPath, cfg, preview, targets, targets);
+    Console.WriteLine($"[dry-run] Preview report written to: {Path.GetFullPath(cfg.ReportPath)}");
     return 0;
 }
 

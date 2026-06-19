@@ -62,13 +62,23 @@ public static class HtmlReport
                   $"Target total {targets.Values.Sum():N0} &middot; Requested rate {cfg.RequestsPerSec:N0}/s &middot; " +
                   $"Doc size {cfg.DocumentSizeBytes:N0} B</p>\n");
 
+        // Requested workload mix (what was proposed/configured).
+        long totalTargetForMix = targets.Values.Sum();
+        var mixParts = Enum.GetValues<OperationType>()
+            .Where(op => targets.TryGetValue(op, out var tv) && tv > 0)
+            .Select(op => $"{op} {Pct(targets[op], totalTargetForMix)}");
+        sb.Append("<h2>Requested Workload Mix</h2>\n");
+        sb.Append($"<p>{string.Join(" &middot; ", mixParts)}</p>\n");
+
         // Per-operation table
+        long totalTarget = targets.Values.Sum();
         sb.Append("<h2>Per-Operation Results</h2>\n<table>\n<thead><tr>");
-        foreach (var h in new[] { "Operation", "Target", "Attempts", "Success", "Errors",
+        foreach (var h in new[] { "Operation", "Requested %", "Target", "Attempts", "Actual %", "Success", "Errors",
                                   "Success %", "Ops/min", "Success/min", "p50 ms", "p95 ms", "p99 ms", "Avg RU" })
             sb.Append($"<th>{h}</th>");
         sb.Append("</tr></thead>\n<tbody>\n");
 
+        long totalAttemptsAll = metrics.TotalAttempts;
         foreach (var op in Enum.GetValues<OperationType>())
         {
             var m = metrics.Ops[op];
@@ -80,8 +90,10 @@ public static class HtmlReport
             double avgRu = m.Success > 0 ? m.TotalRuCharge / m.Success : 0;
             sb.Append("<tr>");
             sb.Append($"<td>{op}</td>");
+            sb.Append($"<td>{Pct(tgt, totalTarget)}</td>");
             sb.Append($"<td>{tgt:N0}</td>");
             sb.Append($"<td>{m.Attempts:N0}</td>");
+            sb.Append($"<td>{Pct(m.Attempts, totalAttemptsAll)}</td>");
             sb.Append($"<td class='ok'>{m.Success:N0}</td>");
             sb.Append($"<td class='{(m.Errors > 0 ? "err" : "")}'>{m.Errors:N0}</td>");
             sb.Append($"<td>{Pct(m.Success, m.Attempts)}</td>");
@@ -94,6 +106,8 @@ public static class HtmlReport
             sb.Append("</tr>\n");
         }
         sb.Append("</tbody>\n</table>\n");
+        sb.Append("<p class='muted'>Requested % = the workload mix you configured (normalized). " +
+                  "Actual % = share of attempts actually executed. They should closely match.</p>\n");
 
         // Failures by operation
         sb.Append("<h2>Failures by Operation</h2>\n");
