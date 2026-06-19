@@ -54,6 +54,21 @@ function Log($msg) {
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Log "=== CosmosLoadTest VM bootstrap starting ==="
+
+    # Strip any surrounding quotes that survive the extension/cmd command line.
+    # (cmd.exe does not strip single quotes, so values can arrive as '...'.)
+    function Unquote([string]$s) {
+        if ($null -eq $s) { return $s }
+        return $s.Trim().Trim("'").Trim('"')
+    }
+    $Endpoint  = Unquote $Endpoint
+    $Key       = Unquote $Key
+    $Database  = Unquote $Database
+    $Container = Unquote $Container
+    $RepoOwner = Unquote $RepoOwner
+    $RepoName  = Unquote $RepoName
+    $Branch    = Unquote $Branch
+
     Log "Repo: $RepoOwner/$RepoName@$Branch  DB: $Database/$Container"
 
     # 0. Pre-flight: refuse to run with an all-zero operation mix (would otherwise
