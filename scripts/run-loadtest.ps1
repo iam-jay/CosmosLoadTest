@@ -108,10 +108,15 @@ try {
     & $dotnet build -c Release | Tee-Object -FilePath (Join-Path $root "build.log")
     if ($LASTEXITCODE -ne 0) { throw "Build failed (exit $LASTEXITCODE)." }
 
-    # 4. Run the workload. Report is written next to the project.
+    # 4. Launch the workload in the BACKGROUND so the CustomScript extension
+    #    (and therefore the ARM deployment) completes as soon as setup is done and
+    #    the run has started -- it does NOT block for the whole run duration.
     $reportPath = Join-Path $srcDir "report.html"
-    $runArgs = @(
-        "run", "-c", "Release", "--no-build", "--",
+    $dll = Join-Path $srcDir "bin\Release\net8.0\CosmosLoadTest.dll"
+    if (-not (Test-Path $dll)) { throw "Built assembly not found: $dll" }
+
+    $appArgs = @(
+        $dll,
         "--endpoint", $Endpoint,
         "--key", $Key,
         "--database", $Database,
@@ -129,20 +134,26 @@ try {
         "--readfeed", $ReadFeed, "--upsert", $Upsert, "--patch", $Patch,
         "--replace", $Replace, "--delete", $Delete, "--batch", $Batch
     )
-    Log "Starting workload: total=$Total rps=$Rps docsize=$DocSize"
-    & $dotnet @runArgs 2>&1 | Tee-Object -FilePath (Join-Path $root "workload.log")
-    $exit = $LASTEXITCODE
+
+    $stdout = Join-Path $root "workload.log"
+    $stderr = Join-Path $root "workload.err.log"
+    Log "Launching workload in background: total=$Total rps=$Rps docsize=$DocSize"
+
+    # Start-Process (no -Wait) launches an independent process that keeps running
+    # after this script exits, so the deployment is marked successful immediately.
+    $proc = Start-Process -FilePath $dotnet -ArgumentList $appArgs `
+        -WorkingDirectory $srcDir -WindowStyle Hidden -PassThru `
+        -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     Pop-Location
 
-    if (Test-Path $reportPath) {
-        Copy-Item $reportPath (Join-Path $root "report.html") -Force
-        Log "Report available at: $reportPath  (and $root\report.html)"
+    Start-Sleep -Seconds 3   # brief pause to catch an immediate crash
+    if ($proc.HasExited -and $proc.ExitCode -ne 0) {
+        throw "Workload failed to start (exit $($proc.ExitCode)). See $stderr / $stdout."
     }
-    if ($exit -ne 0) {
-        Log "WORKLOAD FAILED (exit $exit). See $root\workload.log for the error."
-        throw "Workload exited with code $exit. Check C:\CosmosLoadTest\workload.log."
-    }
-    Log "=== Workload finished successfully (exit $exit) ==="
+
+    Log "=== Workload started (PID $($proc.Id)). Deployment will now complete. ==="
+    Log "Live progress: Get-Content '$stdout' -Wait -Tail 30"
+    Log "Report (when finished): $reportPath  and  $root\report.html"
     exit 0
 }
 catch {
