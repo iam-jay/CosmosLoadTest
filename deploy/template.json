@@ -65,6 +65,7 @@
         },
         "documentSizeBytes": { "defaultValue": 1024, "type": "Int", "metadata": { "description": "Approx. serialized document size in bytes." } },
         "partitionKeyCount": { "defaultValue": 100, "type": "Int", "metadata": { "description": "Number of distinct partition-key values to spread load across." } },
+        "partitionKeyStart": { "defaultValue": 0, "type": "Int", "metadata": { "description": "Partition-key start offset for sharding across machines: this VM uses pk-{start..start+count-1}." } },
         "maxConcurrency": { "defaultValue": 256, "type": "Int", "metadata": { "description": "Maximum concurrent in-flight operations." } },
         "preSeedCount": {
             "defaultValue": 10000,
@@ -246,7 +247,7 @@
                     "fileUris": [ "[variables('scriptUrl')]" ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -NoProfile -File ', variables('scriptName'), ' -Endpoint ''', parameters('cosmosURI'), ''' -Key ''', parameters('cosmosKey'), ''' -Database ''', parameters('databaseName'), ''' -Container ''', parameters('containerName'), ''' -Throughput ', parameters('throughputRu'), ' -Rps ', parameters('requestsPerSec'), ' -Total ', parameters('totalRequests'), ' -DocSize ', parameters('documentSizeBytes'), ' -PkCount ', parameters('partitionKeyCount'), ' -Concurrency ', parameters('maxConcurrency'), ' -PreSeed ', parameters('preSeedCount'), ' -Read ', parameters('readPct'), ' -Query ', parameters('queryPct'), ' -Create ', parameters('createPct'), ' -ReadFeed ', parameters('readFeedPct'), ' -Upsert ', parameters('upsertPct'), ' -Patch ', parameters('patchPct'), ' -Replace ', parameters('replacePct'), ' -Delete ', parameters('deletePct'), ' -Batch ', parameters('batchPct'), ' -RepoOwner ', parameters('repoOwner'), ' -RepoName ', parameters('repoName'), ' -Branch ', parameters('repoBranch'))]"
+                    "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -NoProfile -File ', variables('scriptName'), ' -Endpoint ''', parameters('cosmosURI'), ''' -Key ''', parameters('cosmosKey'), ''' -Database ''', parameters('databaseName'), ''' -Container ''', parameters('containerName'), ''' -Throughput ', parameters('throughputRu'), ' -Rps ', parameters('requestsPerSec'), ' -Total ', parameters('totalRequests'), ' -DocSize ', parameters('documentSizeBytes'), ' -PkCount ', parameters('partitionKeyCount'), ' -PkStart ', parameters('partitionKeyStart'), ' -Concurrency ', parameters('maxConcurrency'), ' -PreSeed ', parameters('preSeedCount'), ' -Read ', parameters('readPct'), ' -Query ', parameters('queryPct'), ' -Create ', parameters('createPct'), ' -ReadFeed ', parameters('readFeedPct'), ' -Upsert ', parameters('upsertPct'), ' -Patch ', parameters('patchPct'), ' -Replace ', parameters('replacePct'), ' -Delete ', parameters('deletePct'), ' -Batch ', parameters('batchPct'), ' -RepoOwner ', parameters('repoOwner'), ' -RepoName ', parameters('repoName'), ' -Branch ', parameters('repoBranch'))]"
                 }
             }
         }

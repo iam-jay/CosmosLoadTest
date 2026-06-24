@@ -31,7 +31,7 @@ public sealed class CosmosOperations
         return new string('x', fill);
     }
 
-    private string RandomPk() => $"pk-{_rng.Next(_cfg.PartitionKeyCount)}";
+    private string RandomPk() => $"pk-{_cfg.PartitionKeyStart + _rng.Next(_cfg.PartitionKeyCount)}";
 
     private Doc NewDoc(string id = null, string pk = null)
     {

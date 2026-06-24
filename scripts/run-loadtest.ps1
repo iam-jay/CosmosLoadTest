@@ -21,6 +21,7 @@ param(
     [long]$Total = 1000,
     [int]$DocSize = 1024,
     [int]$PkCount = 100,
+    [int]$PkStart = 0,
     [int]$Concurrency = 256,
     [int]$PreSeed = 10000,
 
@@ -120,6 +121,7 @@ try {
         "--total", $Total,
         "--docsize", $DocSize,
         "--pkcount", $PkCount,
+        "--pkstart", $PkStart,
         "--concurrency", $Concurrency,
         "--preseed", $PreSeed,
         "--report", $reportPath,

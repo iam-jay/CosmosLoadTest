@@ -24,6 +24,7 @@ long totalTarget = targets.Values.Sum();
 Console.WriteLine($"Endpoint   : {cfg.Endpoint}");
 Console.WriteLine($"Database   : {cfg.Database} / Container: {cfg.Container}");
 Console.WriteLine($"Total ops  : {totalTarget:N0}  @ {cfg.RequestsPerSec:N0}/s  (doc {cfg.DocumentSizeBytes} B)");
+Console.WriteLine($"PK range   : pk-{cfg.PartitionKeyStart} .. pk-{cfg.PartitionKeyStart + cfg.PartitionKeyCount - 1} ({cfg.PartitionKeyCount} keys)");
 Console.WriteLine("Targets    :");
 foreach (var op in Enum.GetValues<OperationType>())
     if (targets[op] > 0) Console.WriteLine($"   {op,-9}: {targets[op]:N0}");
@@ -124,7 +125,7 @@ static async Task PreSeed(Container container, DocumentPool pool, Config cfg)
     {
         await sem.WaitAsync();
         string id = $"seed-{i}";
-        string pk = $"pk-{rng.Next(cfg.PartitionKeyCount)}";
+        string pk = $"pk-{cfg.PartitionKeyStart + rng.Next(cfg.PartitionKeyCount)}";
         var doc = new Doc
         {
             Id = id, Pk = pk, Category = "load",
@@ -188,6 +189,8 @@ Workload:
   --total <n>             Total operation count (default: 1000)
   --docsize <bytes>       Document size in bytes (default: 1024)
   --pkcount <n>           Distinct partition-key values (default: 100)
+  --pkstart <n>           Partition-key start offset for sharding across
+                          machines: machine uses pk-{start..start+count-1} (default: 0)
   --concurrency <n>       Max in-flight ops (default: 256)
   --preseed <n>           Pre-seed doc count when Create%=0 (default: 10000)
   --report <path>         HTML report output (default: report.html)

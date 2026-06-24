@@ -26,6 +26,11 @@ public class Config
     // Number of distinct logical partition-key values to spread load across.
     public int PartitionKeyCount { get; set; } = 100;
 
+    // Starting offset for partition-key values, so multiple client machines can
+    // each own a distinct, non-overlapping range: machine i uses
+    // pk-{PartitionKeyStart .. PartitionKeyStart + PartitionKeyCount - 1}.
+    public int PartitionKeyStart { get; set; } = 0;
+
     // Max concurrent in-flight operations.
     public int MaxConcurrency { get; set; } = 256;
 
@@ -81,6 +86,7 @@ public class Config
         Override(args, "--total", v => cfg.TotalRequests = long.Parse(v));
         Override(args, "--docsize", v => cfg.DocumentSizeBytes = int.Parse(v));
         Override(args, "--pkcount", v => cfg.PartitionKeyCount = int.Parse(v));
+        Override(args, "--pkstart", v => cfg.PartitionKeyStart = int.Parse(v));
         Override(args, "--concurrency", v => cfg.MaxConcurrency = int.Parse(v));
         Override(args, "--preseed", v => cfg.PreSeedCount = int.Parse(v));
         Override(args, "--report", v => cfg.ReportPath = v);

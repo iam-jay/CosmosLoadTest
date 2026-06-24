@@ -53,6 +53,22 @@ dotnet run -c Release
 dotnet run -c Release -- --total 20 --create 60 --read 20 --delete 10 --dryrun
 ```
 
+### Sharding partition keys across multiple client machines
+Use `--pkstart` to give each machine a distinct, non-overlapping key range
+(so collectively they spread load across all physical partitions). For 6
+machines with 3,600 keys each:
+
+| Machine | `--pkstart` | `--pkcount` |
+|---|---|---|
+| 1 | 0 | 3600 |
+| 2 | 3600 | 3600 |
+| 3 | 7200 | 3600 |
+| 4 | 10800 | 3600 |
+| 5 | 14400 | 3600 |
+| 6 | 18000 | 3600 |
+
+Each machine: `--pkcount 3600 --pkstart <offset>` (only the offset changes).
+
 ## Key options
 | Arg | Meaning | Default |
 |-----|---------|---------|
@@ -63,6 +79,7 @@ dotnet run -c Release -- --total 20 --create 60 --read 20 --delete 10 --dryrun
 | `--total` | total operation count | 1000 |
 | `--docsize` | document size (bytes) | 1024 |
 | `--pkcount` | distinct partition-key values | 100 |
+| `--pkstart` | partition-key start offset (shard across machines) | 0 |
 | `--concurrency` | max in-flight ops | 256 |
 | `--preseed` | pre-seed count when Create%=0 | 10000 |
 | `--report` | HTML report path | report.html |

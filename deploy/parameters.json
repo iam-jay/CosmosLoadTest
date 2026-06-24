@@ -18,7 +18,8 @@
         "requestsPerSec": { "value": 100 },
         "totalRequests": { "value": 5000 },
         "documentSizeBytes": { "value": 1024 },
-        "partitionKeyCount": { "value": 100 },
+        "partitionKeyCount": { "value": 3600 },
+        "partitionKeyStart": { "value": 0 },
         "maxConcurrency": { "value": 256 },
         "preSeedCount": { "value": 10000 },
 

@@ -148,8 +148,16 @@
                     {
                         "name": "partitionKeyCount",
                         "type": "Microsoft.Common.TextBox",
-                        "label": "Distinct partition keys",
-                        "defaultValue": "100",
+                        "label": "Distinct partition keys (this machine)",
+                        "defaultValue": "3600",
+                        "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
+                    },
+                    {
+                        "name": "partitionKeyStart",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Partition-key start offset (for sharding across machines)",
+                        "defaultValue": "0",
+                        "toolTip": "Each machine uses pk-{start..start+count-1}. E.g. machine 1=0, machine 2=3600, machine 3=7200, ...",
                         "constraints": { "required": true, "regex": "^[0-9]+$", "validationMessage": "Numbers only." }
                     },
                     {
@@ -229,6 +237,7 @@
             "totalRequests": "[int(steps('workload').totalRequests)]",
             "documentSizeBytes": "[int(steps('workload').documentSizeBytes)]",
             "partitionKeyCount": "[int(steps('workload').partitionKeyCount)]",
+            "partitionKeyStart": "[int(steps('workload').partitionKeyStart)]",
             "maxConcurrency": "[int(steps('workload').maxConcurrency)]",
             "preSeedCount": "[int(steps('workload').preSeedCount)]",
 
